@@ -133,26 +133,19 @@ var app = app || {}
 	}
 
 	function setShareableLink(str){
-		var base = '#view/'
-		linkLink.href = base + urlEncode(str)
+		var base = '#'
+		var hash = urlEncode(str)
+		linkLink.href = base + hash
+		ignoreReloadsFor.push(hash)
+		location.hash = hash
 	}
 
-	function buildStorage(locationHash){
+	function buildStorage(){
 		var key = 'nomnoml.lastSource'
-		if (locationHash.substring(0,6) === '#view/')
-			return {
-				read: function (){ return urlDecode(locationHash.substring(6)) },
-				save: function (){ setShareableLink(currentText()) },
-				moveToLocalStorage: function (){ localStorage[key] = currentText() },
-				isReadonly: true
-			}
 		return {
-			read: function (){ return localStorage[key] || defaultSource },
-			save: function (source){
-				setShareableLink(currentText())
-				localStorage[key] = source
-			},
-			moveToLocalStorage: function (){},
+			read: function (){ return urlDecode(location.hash.replace(/^#/, '')) },
+			save: function (){ setShareableLink(currentText()) },
+			moveToLocalStorage: function (){ },
 			isReadonly: false
 		}
 	}
@@ -210,9 +203,19 @@ var app = app || {}
 		srcLink.download = filename + '.nomnoml'
 	}
 
+	// Before we change the hash, we push the new value to this array
+	// When we get a hash change event, we check this queue to see if
+	// we should ignore the event.
+	var ignoreReloadsFor = []
+
 	function reloadStorage(){
-		storage = buildStorage(location.hash)
-		editor.setValue(storage.read())
+		storage = buildStorage()
+		var newValue = storage.read()
+		if(newValue === ignoreReloadsFor[0]) {
+			ignoreReloadsFor.shift()
+			return
+		}
+		editor.setValue(newValue)
 		sourceChanged()
 		if (storage.isReadonly) storageStatusElement.classList.add('visible')
 		else storageStatusElement.classList.remove('visible')
