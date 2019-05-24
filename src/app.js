@@ -25,6 +25,11 @@ var app = app || {}
 	var mouseDownPoint = false
 	var vm = skanaar.vector
 
+	// Before we change the hash, we push the new value to this array
+	// When we get a hash change event, we check this queue to see if
+	// we should ignore the event.
+	var ignoreReloadsFor = []
+
 	var editor = CodeMirror.fromTextArea(textarea, {
 		lineNumbers: true,
 		mode: 'nomnoml',
@@ -133,10 +138,10 @@ var app = app || {}
 	}
 
 	function setShareableLink(str){
+		ignoreReloadsFor.push(str)
 		var base = '#'
 		var hash = urlEncode(str)
 		linkLink.href = base + hash
-		ignoreReloadsFor.push(hash)
 		location.hash = hash
 	}
 
@@ -203,16 +208,12 @@ var app = app || {}
 		srcLink.download = filename + '.nomnoml'
 	}
 
-	// Before we change the hash, we push the new value to this array
-	// When we get a hash change event, we check this queue to see if
-	// we should ignore the event.
-	var ignoreReloadsFor = []
-
 	function reloadStorage(){
 		storage = buildStorage()
 		var newValue = storage.read()
-		if(newValue === ignoreReloadsFor[0]) {
-			ignoreReloadsFor.shift()
+		var i = ignoreReloadsFor.findIndex(v => v.trim() === newValue.trim())
+		if(i >= 0) {
+			ignoreReloadsFor = ignoreReloadsFor.slice(i + 1)
 			return
 		}
 		editor.setValue(newValue)
