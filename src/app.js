@@ -231,6 +231,7 @@ var app = app || {}
 	}
 
 	function sourceChanged(){
+		storage.save(currentText())
 		try {
 			lineMarker.style.top = '-30px'
 			lineNumbers.classList.remove('error')
@@ -242,7 +243,6 @@ var app = app || {}
 			positionCanvas(canvasElement, superSampling, offset)
 			graphTitle = model.config.title
 			setFilenames(model.config.title)
-			storage.save(currentText())
 		} catch (e){
 			var matches = e.message.match('line ([0-9]*)')
 			lineNumbers.classList.add('error')
